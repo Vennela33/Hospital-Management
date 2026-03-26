@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy import Boolean, Column, Integer, String, ForeignKey, Float ,DateTime,UniqueConstraint
 from app.database import Base
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -46,3 +46,21 @@ class Appointment(Base):
     status = Column(String, default="scheduled")
     doctor = relationship("Doctor", back_populates="appointments")
     patient = relationship("Patient", back_populates="appointments")
+
+class Billing(Base):
+    __tablename__ = "billings"
+    __table_args__ = (
+        UniqueConstraint('appointment_id', name='unique_appointment_billing'),)
+
+    id = Column(Integer, primary_key=True)
+    patient_id = Column(Integer, ForeignKey("patients.id"), index=True)
+    doctor_id = Column(Integer, ForeignKey("doctors.id"), index=True)
+    appointment_id = Column(Integer, ForeignKey("appointments.id"), nullable=True)
+    consultation_fee = Column(Float)
+    additional_charges = Column(Float, default=0)
+    total_amount = Column(Float)
+    payment_status = Column(String, default="pending")  # pending, paid, cancelled
+    payment_mode = Column(String)  # cash, card, upi
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, onupdate=datetime.utcnow)

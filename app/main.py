@@ -1,7 +1,7 @@
 from fastapi import FastAPI,HTTPException,Request
 from app.database import engine
 from app import models
-from app.router import doctors, patients,Appointments
+from app.router import Appointments_router, billings_router, doctors_router, patients_router,reports_router
 from app.auth import create_token
 import time
 from fastapi.responses import JSONResponse
@@ -42,8 +42,10 @@ def login(username: str, password: str):
     token = create_token({"sub": username,"role":role})
 
     return {"access_token": token, "token_type": "bearer"}
-app.include_router(doctors.router)
-app.include_router(patients.router)
-app.include_router(Appointments.router)
+app.include_router(doctors_router.router)
+app.include_router(patients_router.router)
+app.include_router(Appointments_router.router)
+app.include_router(billings_router.router)
+app.include_router(reports_router.router)
 
 

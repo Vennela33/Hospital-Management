@@ -31,10 +31,9 @@ class PatientBase(BaseModel):
     age: int = Field(..., gt=0)
     phone: str
     doctor_id: int
-
     @classmethod
     def validate_phone(cls,v):
-        if not re.fullmatch(r"\d{10}", phone):
+        if not re.fullmatch(r"\d{10}",phone):
             raise ValueError("Phone must be exactly 10 digits")
         return v
 
@@ -77,3 +76,27 @@ class AppointmentResponse(BaseModel):
 
     class config:
         from_attributes=True
+
+
+class BillingCreate(BaseModel):
+    patient_id: int
+    doctor_id: int
+    appointment_id: int | None = None
+    consultation_fee: float
+    additional_charges: float = 0
+    payment_mode: str
+
+
+class BillingUpdate(BaseModel):
+    consultation_fee: float | None = None
+    additional_charges: float | None = None
+    payment_status: str | None = None
+
+
+class BillingResponse(BaseModel):
+    id: int
+    total_amount: float
+    payment_status: str
+
+    class Config:
+        from_attributes = True

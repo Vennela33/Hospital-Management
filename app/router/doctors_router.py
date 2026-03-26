@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, Query
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
-from app import services, schemas
+from app import schemas
 from app.dependencies import verify_token, admin_required, doctor_required
 from app import models
+from app.services import doctors,patients
 
 
 
@@ -21,7 +22,7 @@ def get_db():
 
 @router.post("/",dependencies=[Depends(verify_token)])
 def create(data: schemas.DoctorCreate, db: Session = Depends(get_db),user=Depends(verify_token)):
-    return services.create_doctor(db, data,user)
+    return doctors.create_doctor(db, data,user)
 
 
 @router.get("/",dependencies=[Depends(verify_token)])
@@ -32,29 +33,29 @@ def list_doctors(
     limit: int = Query(5, gt=0),
     db: Session = Depends(get_db)
 ):
-    return services.get_doctors(db, specialization,is_active,page,limit)
+    return doctors.get_doctors(db, specialization,is_active,page,limit)
 
 
 @router.get("/{doctor_id}",dependencies=[Depends(verify_token)])
 def get(doctor_id: int, db: Session = Depends(get_db)):
-    return services.get_doctor(db, doctor_id)
+    return doctors.get_doctor(db, doctor_id)
 
 
 @router.put("/{doctor_id}",dependencies=[Depends(verify_token)])
 def update(doctor_id: int, data: schemas.DoctorUpdate, db: Session = Depends(get_db),user=Depends(verify_token)):
-    return services.update_doctor_full(db, doctor_id, data,user)
+    return doctors.update_doctor_full(db, doctor_id, data,user)
 
 
 @router.delete("/{doctor_id}",dependencies=[Depends(admin_required)])
 def delete(doctor_id: int, db: Session = Depends(get_db)):
-    return services.delete_doctor(db, doctor_id)
+    return doctors.delete_doctor(db, doctor_id)
 
 
 @router.get("/{doctor_id}/patients",dependencies=[Depends(verify_token)])
 def doctor_patients(doctor_id: int, db: Session = Depends(get_db),user=Depends(verify_token)):
     if user['role']!="admin":
         raise HTTPException(status_code=403,detail="Only admin can delete")
-    return services.get_patients_by_doctor(db, doctor_id)
+    return patients.get_patients_by_doctor(db, doctor_id)
 
 
 
@@ -65,5 +66,28 @@ def update_doctor_partial(
     db: Session = Depends(get_db),
     user=Depends(verify_token)
 ):
-    return services.update_doctor_partial(db, doctor_id, data,user)
+    return doctors.update_doctor_partial(db, doctor_id, data,user)
 
+@router.put("/{doctor_id}/restore")
+def restore_doctor(
+    doctor_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(verify_token)
+):
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+
+    doctor = db.query(models.Doctor).filter(models.Doctor.id == doctor_id).first()
+
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+
+    if doctor.is_active:
+        raise HTTPException(status_code=400, detail="Doctor already active")
+
+
+    doctor.is_active = True
+    db.commit()
+
+    return {"message": "Doctor restored successfully"}
